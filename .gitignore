@@ -1,2 +1,7 @@
 data/
 literature/
+
+renv/
+.Rprofile
+
+.vscode/
