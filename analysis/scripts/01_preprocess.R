@@ -1,11 +1,10 @@
 suppressPackageStartupMessages({
-  library(GEOquery)
-  library(hugene10sttranscriptcluster.db)
-  library(limma)
-  library(FactoMineR)
-  library(factoextra)
-  library(sva)
-  library(patchwork)
+  library(GEOquery) # get GEO data
+  library(hugene10sttranscriptcluster.db) # probe to symbol
+  library(limma) # avereps(), normalizeBetweenArrays()
+  library(FactoMineR) # PCA
+  library(factoextra) # PCA plot
+  library(sva) # ComBat
 })
 
 # get GEO data
@@ -67,7 +66,7 @@ lookup <- c(
   "IPF/UIP" = "case",
   "Idiopathic pulmonary fibrosis" = "case",
   "control" = "control",
-  "Normal control" = "case"
+  "Normal control" = "control"
 )
 
 group <- unname(c(
@@ -75,27 +74,42 @@ group <- unname(c(
   lookup[pd_110147$`disease state:ch1`]
 ))
 
-targets <- data.frame(
+sample_info <- data.frame(
   row.names = colnames(expr_combined),
-  batch = batch,
-  group = group
+  batch = factor(batch, levels = c("GSE32537", "GSE110147")),
+  group = factor(group, levels = c("control", "case"))
 )
 
-targets <- na.omit(targets)
+sample_info <- na.omit(sample_info)
 
 expr_combined <- expr_combined[,
-  colnames(expr_combined) %in% rownames(targets),
+  colnames(expr_combined) %in% rownames(sample_info),
   drop = FALSE
 ]
 
 
-# generate PCA plots & correct for batch effects
-plot_pca <- function(expr, targets) {
+# correction
+expr_normalized <- normalizeBetweenArrays(
+  expr_combined,
+  method = "quantile"
+)
+
+mod <- model.matrix(~group, data = sample_info)
+
+expr_combat <- ComBat(
+  dat = expr_normalized,
+  batch = sample_info$batch,
+  mod = mod
+)
+
+
+# generate PCA plots
+plot_pca <- function(expr, sample_info) {
   res_pca <- PCA(t(expr), scale.unit = FALSE, graph = FALSE)
 
   p <- fviz_pca_ind(
     res_pca,
-    habillage = targets$`batch`,
+    habillage = sample_info$`batch`,
     addEllipses = TRUE,
     ellipse.level = 0.95,
     label = "none",
@@ -105,19 +119,15 @@ plot_pca <- function(expr, targets) {
   return(p)
 }
 
-p01 <- plot_pca(expr_combined, targets)
-
-expr_combat <- ComBat(
-  dat = expr_combined,
-  batch = targets$batch,
-)
-
-p02 <- plot_pca(expr_combat, targets)
+p01 <- plot_pca(expr_combined, sample_info)
+p02 <- plot_pca(expr_combat, sample_info)
 
 
 # save objects
 saveRDS(expr_combat, file = "data/processed/expr.rds")
-saveRDS(targets, file = "data/processed/targets.rds")
+saveRDS(sample_info["group"], file = "data/processed/pd.rds")
+write.csv(sample_info, file = "results/tables/sample_info.csv")
 
-saveRDS(p01, file = "data/processed/p01.rds")
-saveRDS(p02, file = "data/processed/p02.rds")
+saveRDS(p01, file = "data/processed/p01_PCA_before.rds")
+saveRDS(p02, file = "data/processed/p02_PCA_after.rds")
+
