@@ -21,7 +21,7 @@ contrast.matrix <- makeContrasts(
 fit2 <- contrasts.fit(fit, contrast.matrix)
 fit2 <- eBayes(fit2, robust = TRUE)
 
-res_DEG <- topTable(
+res_DEG_all <- topTable(
   fit2,
   number = Inf,
   adjust.method = "BH",
@@ -29,7 +29,7 @@ res_DEG <- topTable(
 )
 
 res_DEG_sig <- subset(
-  res_DEG,
+  res_DEG_all,
   adj.P.Val < 0.05 & abs(logFC) >= log2(1.3)
 )
 
@@ -38,9 +38,9 @@ res_DEG_sig$change <- ifelse(res_DEG_sig$logFC > 0, "up", "down")
 
 # volcano plot
 EnhancedVolcano(
-  res_DEG,
+  res_DEG_all,
 
-  lab = rep("", nrow(res_DEG)),
+  lab = rep("", nrow(res_DEG_all)),
 
   x = "logFC",
   y = "adj.P.Val",
@@ -63,16 +63,21 @@ EnhancedVolcano(
 
 # save objects
 saveRDS(
+  res_DEG_all,
+  file = "data/processed/DEG_all.rds",
+)
+
+saveRDS(
   res_DEG_sig,
-  file = "data/processed/DEGs.rds",
+  file = "data/processed/DEG_sig.rds",
 )
 
 write.csv(
-  res_DEG,
-  file = "results/tables/res_DEG_all.csv",
+  res_DEG_all,
+  file = "results/tables/DEG_all.csv",
 )
 
 write.csv(
   res_DEG_sig,
-  file = "results/tables/DEGs.csv",
+  file = "results/tables/DEG_sig.csv",
 )
