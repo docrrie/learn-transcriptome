@@ -1,7 +1,6 @@
 suppressPackageStartupMessages({
   library(GEOquery) # get GEO data
-  library(hugene10sttranscriptcluster.db) # annotate probe
-  library(org.Hs.eg.db)
+  library(hugene10sttranscriptcluster.db) # annotate probes
   library(limma) # avereps(), normalizeBetweenArrays()
   library(FactoMineR) # PCA
   library(factoextra) # PCA plot
