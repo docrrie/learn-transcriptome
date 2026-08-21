@@ -1,6 +1,7 @@
 suppressPackageStartupMessages({
   library(GEOquery) # get GEO data
-  library(hugene10sttranscriptcluster.db) # probe to symbol
+  library(hugene10sttranscriptcluster.db) # annotate probe
+  library(org.Hs.eg.db)
   library(limma) # avereps(), normalizeBetweenArrays()
   library(FactoMineR) # PCA
   library(factoextra) # PCA plot
@@ -14,7 +15,7 @@ read_GEO <- function(series) {
   expr <- exprs(eSet)
   pd <- pData(eSet)
 
-  expr_anno <- mapIds(
+  probe_symbol <- mapIds(
     hugene10sttranscriptcluster.db,
     keys = rownames(expr),
     column = "SYMBOL",
@@ -22,12 +23,14 @@ read_GEO <- function(series) {
     multiVals = "first"
   )
 
-  symbol <- unname(expr_anno[rownames(expr)])
+  symbol <- unname(probe_symbol[rownames(expr)])
   keep <- !is.na(symbol)
+  expr_anno <- expr[keep, , drop = FALSE]
+  rownames(expr_anno) <- unname(probe_symbol[keep])
 
   expr_g <- avereps(
-    expr[keep, , drop = FALSE],
-    ID = symbol[keep]
+    expr_anno,
+    ID = rownames(expr_anno)
   )
 
   return(list(expr_g, pd))
@@ -130,4 +133,3 @@ write.csv(sample_info, file = "results/tables/sample_info.csv")
 
 saveRDS(p01, file = "data/processed/p01_PCA_before.rds")
 saveRDS(p02, file = "data/processed/p02_PCA_after.rds")
-
