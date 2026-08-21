@@ -33,9 +33,7 @@ res_DEG_sig <- subset(
   adj.P.Val < 0.05 & abs(logFC) >= log2(1.3)
 )
 
-cat("DEGs:", nrow(res_DEG_sig), "\n")
-cat("up:", sum(res_DEG_sig$logFC > 0), "\n")
-cat("down:", sum(res_DEG_sig$logFC < 0), "\n")
+res_DEG_sig$change <- ifelse(res_DEG_sig$logFC > 0, "up", "down")
 
 
 # volcano plot
@@ -64,12 +62,17 @@ EnhancedVolcano(
 
 
 # save objects
+saveRDS(
+  res_DEG_sig,
+  file = "data/processed/DEGs.rds",
+)
+
 write.csv(
   res_DEG,
-  "results/tables/res_DEG_all.csv",
+  file = "results/tables/res_DEG_all.csv",
 )
 
 write.csv(
   res_DEG_sig,
-  "results/tables/DEGs.csv",
+  file = "results/tables/DEGs.csv",
 )
